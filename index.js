@@ -171,7 +171,7 @@ var SortableListView = React.createClass({
 
     return this.state;
   },
-  cancel: function() { 
+  cancel: function() {
     if (!this.moved) {
       this.setState({
         active: false,
@@ -229,8 +229,10 @@ var SortableListView = React.createClass({
   },
   checkTargetElement() {
     let scrollValue = this.scrollValue;
+
     let moveY = this.moveY;
-    let targetPixel = scrollValue + moveY - this.wrapperLayout.pageY;
+    let targetPixel = scrollValue + moveY - this.firstRowY;
+
     let i = 0;
     let x = 0;
     let row;
@@ -257,9 +259,11 @@ var SortableListView = React.createClass({
     }
 
   },
+  firstRowY: undefined,
   layoutMap: {},
   _rowRefs: {},
   handleRowActive: function(row) {
+    if (this.props.disableSorting) return;
     this.state.pan.setValue({x: 0, y: 0});
     LayoutAnimation.easeInEaseOut();
     this.moveY = row.layout.pageY;
@@ -282,7 +286,7 @@ var SortableListView = React.createClass({
       active = {active: true};
     }
     let hoveringIndex = this.order[this.state.hovering];
-    return <Component
+    return (<Component
       {...this.props}
       activeDivider={this.renderActiveDivider()}
       key={index}
@@ -293,8 +297,14 @@ var SortableListView = React.createClass({
       panResponder={this.state.panResponder}
       rowData={{data, section, index}}
       onRowActive={this.handleRowActive}
-      onRowLayout={layout => this.layoutMap[index] = layout.nativeEvent.layout}
-      />
+      onRowLayout={layout => this._updateLayoutMap(index, layout.nativeEvent.layout)}
+      />);
+  },
+  _updateLayoutMap(index, layout) {
+      if (!this.firstRowY || layout.y < this.firstRowY) {
+          this.firstRowY = layout.y;
+      }
+      this.layoutMap[index] = layout;
   },
   renderActive: function() {
     if (!this.state.active) return;
@@ -336,6 +346,9 @@ var SortableListView = React.createClass({
       />
       {this.renderActive()}
     </View>
+  },
+  scrollTo: function(...args) {
+    this.scrollResponder.scrollTo.apply(this.scrollResponder, args);
   }
 });
 
